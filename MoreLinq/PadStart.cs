@@ -118,11 +118,11 @@ namespace MoreLinq
         {
             return
                 source is ICollection<T> collection
-                ? collection.Count >= width
-                  ? collection
-                  : Enumerable.Range(0, width - collection.Count)
-                              .Select(i => paddingSelector != null ? paddingSelector(i) : padding)
-                              .Concat(collection)
+                ? PadLeftImplWithCount(source, width, padding, paddingSelector, collection.Count)
+#if IREADONLYCOLLECTION
+                : source is IReadOnlyCollection<T> readOnlyCollection
+                ? PadLeftImplWithCount(source, width, padding, paddingSelector, readOnlyCollection.Count)
+#endif
                 : _(); IEnumerable<T> _()
                 {
                     var array = new T[width];
@@ -153,6 +153,16 @@ namespace MoreLinq
                     for (var i = 0; i < count; i++)
                         yield return array[i];
                 }
+        }
+
+        static IEnumerable<T> PadLeftImplWithCount<T>(IEnumerable<T> source,
+            int width, T padding, Func<int, T> paddingSelector, int sourceCount)
+        {
+            return sourceCount >= width
+                  ? source
+                  : Enumerable.Range(0, width - sourceCount)
+                              .Select(i => paddingSelector != null ? paddingSelector(i) : padding)
+                              .Concat(source);
         }
     }
 }

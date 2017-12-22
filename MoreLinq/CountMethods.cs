@@ -133,26 +133,30 @@ namespace MoreLinq
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
 
-            var col = source as ICollection<T>;
-            if (col != null)
-            {
-                return predicate(col.Count);
-            }
+            return
+                (source is ICollection<T> col)
+                ? predicate(col.Count)
+#if IREADONLYCOLLECTION
+                : (source is IReadOnlyCollection<T> readOnlyCol)
+                ? predicate(readOnlyCol.Count)
+#endif
+                : _(); bool _()
+                { 
+                    var count = 0;
 
-            var count = 0;
-
-            using (var e = source.GetEnumerator())
-            {
-                while (e.MoveNext())
-                {
-                    if (++count == limit)
+                    using (var e = source.GetEnumerator())
                     {
-                        break;
+                        while (e.MoveNext())
+                        {
+                            if (++count == limit)
+                            {
+                                break;
+                            }
+                        }
                     }
-                }
-            }
 
-            return predicate(count);
+                    return predicate(count);
+                }
         }
     }
 }

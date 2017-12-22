@@ -43,6 +43,10 @@ namespace MoreLinq
             return
                 source is ICollection<T> col
                 ? col.Take(col.Count - count)
+#if IREADONLYCOLLECTION
+                : source is IReadOnlyCollection<T> readOnlyCol
+                ? readOnlyCol.Take(readOnlyCol.Count - count)
+#endif
                 : _(); IEnumerable<T> _()
                 {
                     var queue = new Queue<T>(count);

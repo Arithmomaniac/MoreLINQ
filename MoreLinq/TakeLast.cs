@@ -49,9 +49,13 @@ namespace MoreLinq
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
 
-            return 
+            return
                 source is ICollection<TSource> col
                 ? col.Slice(Math.Max(0, col.Count - count), int.MaxValue)
+#if IREADONLYCOLLECTION
+                : source is IReadOnlyCollection<TSource> readOnlyCol
+                ? readOnlyCol.Slice(Math.Max(0, readOnlyCol.Count - count), int.MaxValue)
+#endif
                 : _(); IEnumerable<TSource> _()
                 {
                     if (count <= 0)
