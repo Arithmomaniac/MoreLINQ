@@ -53,8 +53,7 @@ namespace MoreLinq
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (fallback == null) throw new ArgumentNullException(nameof(fallback));
 
-            var list = source as IList<TSource>;
-            if (list != null)
+            if (source is IList<TSource> list)
             {
                 switch (list.Count)
                 {
@@ -67,6 +66,21 @@ namespace MoreLinq
                     // anything but 0 and 1 is not handled
                 }
             }
+#if IREADONLYCOLLECTION
+            else if (source is IReadOnlyList<TSource> readOnlyList)
+            {
+                switch (readOnlyList.Count)
+                {
+                    case 0:
+                        return fallback();
+
+                    case 1:
+                        return readOnlyList[0];
+
+                        // anything but 0 and 1 is not handled
+                }
+            }
+#endif
             else
             {
                 using (var iterator = source.GetEnumerator())

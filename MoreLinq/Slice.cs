@@ -45,16 +45,30 @@ namespace MoreLinq
             if (startIndex < 0) throw new ArgumentOutOfRangeException(nameof(startIndex));
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
 
-            // optimization for anything implementing IList<T>
-            return !(sequence is IList<T> list)
-                 ? sequence.Skip(startIndex).Take(count)
-                 : _(count); IEnumerable<T> _(int countdown)
-                 {
-                     var listCount = list.Count;
-                     var index = startIndex;
-                     while (index < listCount && countdown-- > 0)
-                         yield return list[index++];
-                 }
+            if (sequence is IList<T> list)
+            {
+                return _(count); IEnumerable<T> _(int countdown)
+                {
+                    var listCount = list.Count;
+                    var index = startIndex;
+                    while (index < listCount && countdown-- > 0)
+                        yield return list[index++];
+                }
+            }
+#if IREADONLYCOLLECTION
+            else if (sequence is IReadOnlyList<T> readOnlyList)
+            {
+                return _(count); IEnumerable<T> _(int countdown)
+                {
+                    var readOnlyListCount = readOnlyList.Count;
+                    var index = startIndex;
+                    while (index < readOnlyListCount && countdown-- > 0)
+                        yield return readOnlyList[index++];
+                }
+            }
+#endif
+
+            return sequence.Skip(startIndex).Take(count);
         }
     }
 }

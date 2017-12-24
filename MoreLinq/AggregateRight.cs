@@ -46,12 +46,18 @@ namespace MoreLinq
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (func == null) throw new ArgumentNullException(nameof(func));
 
+#if IREADONLYCOLLECTION
+            if (source is IReadOnlyList<TSource> readOnlyList)
+                return readOnlyList.Count != 0
+                    ? AggregateRightImpl(readOnlyList, readOnlyList.Last(), func, readOnlyList.Count - 1)
+                    : throw new InvalidOperationException("Sequence contains no elements.");
+#endif
+
             var list = (source as IList<TSource>) ?? source.ToList();
 
-            if (list.Count == 0)
-                throw new InvalidOperationException("Sequence contains no elements.");
-
-            return AggregateRightImpl(list, list.Last(), func, list.Count - 1);
+            return list.Count != 0
+                ? AggregateRightImpl(list, list.Last(), func, list.Count - 1)
+                : throw new InvalidOperationException("Sequence contains no elements.");
         }
 
         /// <summary>
@@ -81,6 +87,10 @@ namespace MoreLinq
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (func == null) throw new ArgumentNullException(nameof(func));
 
+#if IREADONLYCOLLECTION
+            if (source is IReadOnlyList<TSource> readOnlyList)
+                return AggregateRightImpl(readOnlyList, seed, func, readOnlyList.Count);
+#endif
             var list = (source as IList<TSource>) ?? source.ToList();
 
             return AggregateRightImpl(list, seed, func, list.Count);
@@ -129,5 +139,17 @@ namespace MoreLinq
 
             return accumulator;
         }
+
+#if IREADONLYCOLLECTION
+        static TResult AggregateRightImpl<TSource, TResult>(IReadOnlyList<TSource> readOnlyList, TResult accumulator, Func<TSource, TResult, TResult> func, int i)
+        {
+            while (i-- > 0)
+            {
+                accumulator = func(readOnlyList[i], accumulator);
+            }
+
+            return accumulator;
+        }
+#endif
     }
 }
